@@ -120,6 +120,18 @@
   .section-head h2{ font-family:var(--disp); font-size:17px; font-weight:600; }
   .section-head .hint{ font-family:var(--mono); font-size:11px; color:var(--muted-2); text-transform:uppercase; letter-spacing:.08em;}
 
+  /* ---- toolbar (shared style: Overview filter bar + Records filter bar) ---- */
+  .toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:20px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field label{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-2); }
+  .field select, .field input[type=text]{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; font-size:12.5px; font-family:var(--body); min-width:170px; outline:none; }
+  .field select:focus, .field input:focus{ border-color: var(--orange); }
+  .toolbar .search-field{ flex:1; min-width:200px; }
+  .toolbar .search-field input{ width:100%; }
+  .result-count{ font-family:var(--mono); font-size:11.5px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+  .clear-btn{ font-family:var(--mono); font-size:11px; color:var(--muted); background:transparent; border:1px solid var(--line); border-radius:8px; padding:8px 12px; cursor:pointer; text-transform:uppercase; letter-spacing:.05em; }
+  .clear-btn:hover{ color:var(--orange); border-color: var(--orange); }
+
   .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
   @media (max-width:900px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
   .stat-card{ background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--c,var(--orange)); border-radius:10px; padding:18px 20px; position:relative; overflow:hidden; }
@@ -127,6 +139,8 @@
   .stat-card .value{ font-family:var(--disp); font-size:30px; font-weight:700; line-height:1; }
   .stat-card .foot{ font-size:12px; color:var(--muted); margin-top:8px; }
   .stat-card.wide .value{ font-size:19px; line-height:1.25; font-weight:600; }
+  .stat-select{ width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:9px 11px; border-radius:8px; font-size:13.5px; font-family:var(--body); outline:none; font-weight:600; }
+  .stat-select:focus{ border-color:var(--pink); }
 
   .grid-2{ display:grid; grid-template-columns: 1.3fr 1fr; gap:18px; }
   @media (max-width:960px){ .grid-2{ grid-template-columns:1fr; } }
@@ -182,17 +196,6 @@
   .sort-field select{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; font-size:12px; font-family:var(--body); outline:none; }
   .sort-field select:focus{ border-color:var(--orange); }
 
-  .toolbar{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-bottom:20px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
-  .field{ display:flex; flex-direction:column; gap:6px; }
-  .field label{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-2); }
-  .field select, .field input[type=text]{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:8px 10px; border-radius:8px; font-size:12.5px; font-family:var(--body); min-width:170px; outline:none; }
-  .field select:focus, .field input:focus{ border-color: var(--orange); }
-  .toolbar .search-field{ flex:1; min-width:200px; }
-  .toolbar .search-field input{ width:100%; }
-  .result-count{ font-family:var(--mono); font-size:11.5px; color:var(--muted); margin-left:auto; white-space:nowrap; }
-  .clear-btn{ font-family:var(--mono); font-size:11px; color:var(--muted); background:transparent; border:1px solid var(--line); border-radius:8px; padding:8px 12px; cursor:pointer; text-transform:uppercase; letter-spacing:.05em; }
-  .clear-btn:hover{ color:var(--orange); border-color: var(--orange); }
-
   .record-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; min-height:200px; }
   @media (max-width:1180px){ .record-grid{ grid-template-columns:repeat(2,1fr); } }
   @media (max-width:760px){ .record-grid{ grid-template-columns:1fr; } }
@@ -203,8 +206,10 @@
   .rcard .compare .side{ position:relative; aspect-ratio: 4/3; overflow:hidden; display:flex; align-items:center; justify-content:center; }
   .rcard .compare .side img{ width:100%; height:100%; object-fit:cover; display:block; }
   .rcard .compare .side.missing{ color:var(--muted-2); font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em; text-align:center; padding:8px; }
+  .rcard .compare .side.broken{ flex-direction:column; gap:6px; padding:8px; }
   .rcard .compare .side.broken img{ display:none; }
-  .rcard .compare .side.broken::before{ content:'Image unavailable'; color:var(--muted-2); font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; text-align:center; padding:8px; }
+  .rcard .compare .side .broken-label{ font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted-2); text-align:center; }
+  .rcard .compare .side .open-orig{ font-family:var(--mono); font-size:9.5px; color:var(--orange); text-decoration:underline; z-index:3; position:relative; }
   .rcard .compare .side::after{ content:attr(data-tag); position:absolute; top:8px; left:8px; font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; background:rgba(9,11,16,0.75); backdrop-filter:blur(2px); padding:3px 8px; border-radius:5px; color:var(--muted); z-index:2;}
   .rcard .compare .side.out::after{ color:var(--teal); }
   .rcard .compare .divider{ position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(255,255,255,0.15); z-index:2; }
@@ -242,10 +247,11 @@
   @media (max-width:700px){ .modal-body-meta{ grid-template-columns:repeat(2,1fr);} }
   .mmeta-item .label{ font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-2); margin-bottom:5px;}
   .mmeta-item .val{ font-size:13.5px; font-weight:500; }
-  .img-note{ font-family:var(--mono); font-size:10px; color:var(--muted-2); text-align:center; padding:14px; }
+  .modal-broken-note a{ text-transform:none; letter-spacing:0; }
 
   /* detail tab */
   .detail-head{ display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+  .detail-head-right{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .back-link{ font-family:var(--mono); font-size:11.5px; color:var(--purple); background:transparent; border:1px solid var(--line); border-radius:8px; padding:9px 14px; cursor:pointer; text-transform:uppercase; letter-spacing:.05em;}
   .back-link:hover{ border-color:var(--purple); }
   .detail-eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--purple); text-transform:uppercase; margin-bottom:8px; }
@@ -357,11 +363,28 @@
   <!-- ============ TAB 1: OVERVIEW ============ -->
   <div class="view active" id="view-overview">
 
+    <div class="toolbar">
+      <div class="field">
+        <label>Enterprise</label>
+        <input type="text" id="ov-f-enterprise" list="enterprise-list" placeholder="All enterprises">
+      </div>
+      <div class="field">
+        <label>Rejected by</label>
+        <select id="ov-f-user"><option value="">All editors</option></select>
+      </div>
+      <div class="field">
+        <label>Action</label>
+        <select id="ov-f-action"><option value="">All actions</option></select>
+      </div>
+      <button class="clear-btn" id="ov-clear-filters">Clear filters</button>
+      <div class="result-count" id="ov-result-count">– records</div>
+    </div>
+
     <div class="stat-grid">
       <div class="stat-card" style="--c:var(--orange)">
         <div class="label">Total Rework Requests</div>
         <div class="value" id="s-total">–</div>
-        <div class="foot">in selected date range</div>
+        <div class="foot">in selected filters</div>
       </div>
       <div class="stat-card" style="--c:var(--teal)">
         <div class="label">Editors Reporting</div>
@@ -374,9 +397,9 @@
         <div class="foot">distinct accounts affected</div>
       </div>
       <div class="stat-card wide" style="--c:var(--pink)">
-        <div class="label">Top Issue Category</div>
-        <div class="value" id="s-topcat">–</div>
-        <div class="foot" id="s-topcat-count">– requests</div>
+        <div class="label">Filter by category</div>
+        <select class="stat-select" id="ov-f-category"><option value="">All categories</option></select>
+        <div class="foot" id="s-topcat-foot">Top: – · –</div>
       </div>
     </div>
 
@@ -390,7 +413,7 @@
 
     <div class="section-head">
       <h2>Rework categories</h2>
-      <div class="hint">click a reason to see every editor behind it</div>
+      <div class="hint" id="cat-section-hint">click a reason to see every editor behind it</div>
     </div>
     <div class="grid-2">
       <div class="panel">
@@ -539,8 +562,8 @@
     </div>
     <div class="side-labels"><span>Input</span><span>Drag to compare</span><span>AI Output</span></div>
     <div class="slider-wrap" id="slider-wrap">
-      <img id="modal-img-in" src="" alt="input" onerror="imgErr(this)">
-      <img id="modal-img-out" class="over" src="" alt="output" onerror="imgErr(this)">
+      <img id="modal-img-in" src="" alt="input" referrerpolicy="no-referrer" onerror="imgErr(this)">
+      <img id="modal-img-out" class="over" src="" alt="output" referrerpolicy="no-referrer" onerror="imgErr(this)">
       <div class="slider-handle" id="slider-handle"></div>
     </div>
     <div class="modal-body-meta">
@@ -561,8 +584,9 @@ const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSkjAw7SP
 /* Row field indices: [date, action, comment, enterprise, user, inUrl, outUrl, ts] */
 const F = { DATE:0, ACTION:1, COMMENT:2, ENTERPRISE:3, USER:4, IN:5, OUT:6, TS:7 };
 
-let FULL_DATA = [];   // everything parsed from the sheet
-let DATA = [];        // date-filtered subset used everywhere below
+let FULL_DATA = [];      // everything parsed from the sheet
+let DATA = [];           // date-filtered subset (feeds Records tab)
+let OVERVIEW_DATA = [];  // DATA further filtered by the Overview tab's own filters
 let sortedEnterprises = [], sortedUsers = [], sortedCats = [], sortedActions = [];
 
 /* ===== helpers ===== */
@@ -578,10 +602,50 @@ function initials(email){
 function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+/* ---- resilient image loading: retry once, then fall back to a clear message + raw link ---- */
 window.imgErr = function(img){
+  const attempts = parseInt(img.dataset.retries||'0',10);
+  if(attempts < 1 && img.dataset.rawUrl){
+    img.dataset.retries = String(attempts+1);
+    const raw = img.dataset.rawUrl;
+    img.src = raw + (raw.includes('?') ? '&' : '?') + '__retry=' + Date.now();
+    return;
+  }
   const side = img.closest('.side');
-  if(side) side.classList.add('broken');
+  if(side){
+    side.classList.add('broken');
+    if(!side.querySelector('.broken-label')){
+      const lbl = document.createElement('div');
+      lbl.className = 'broken-label';
+      lbl.textContent = 'Image unavailable';
+      side.appendChild(lbl);
+    }
+    if(img.dataset.rawUrl && !side.querySelector('.open-orig')){
+      const a = document.createElement('a');
+      a.href = img.dataset.rawUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.className = 'open-orig'; a.textContent = 'Open original ↗';
+      a.addEventListener('click', e=> e.stopPropagation());
+      side.appendChild(a);
+    }
+    return;
+  }
+  const wrap = img.closest('.slider-wrap');
+  if(wrap){
+    img.style.display = 'none';
+    const cls = img.id === 'modal-img-in' ? 'modal-broken-in' : 'modal-broken-out';
+    if(!wrap.querySelector('.'+cls)){
+      const note = document.createElement('div');
+      note.className = 'modal-broken-note ' + cls;
+      note.style.cssText = `position:absolute; top:0; bottom:0; left:${img.id==='modal-img-in'?'0':'50%'}; width:50%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:#545d70; font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:.05em; z-index:1;`;
+      note.innerHTML = 'Image unavailable' + (img.dataset.rawUrl ? `<br><a href="${img.dataset.rawUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff7a45; text-decoration:underline; text-transform:none; letter-spacing:0;">Open original ↗</a>` : '');
+      wrap.appendChild(note);
+    }
+  }
 };
+function clearModalBrokenNotes(){
+  document.querySelectorAll('#slider-wrap .modal-broken-note').forEach(n=>n.remove());
+}
 
 /* ===== date helpers ===== */
 function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -653,7 +717,6 @@ function applyDateFilter(preset, cStart, cEnd){
     const s = range.start.getTime(), e = range.end.getTime();
     DATA = FULL_DATA.filter(row => !isNaN(row[F.TS]) && row[F.TS] >= s && row[F.TS] <= e);
   }
-  // update button label
   const lbl = document.getElementById('date-filter-label');
   if(preset==='custom'){
     lbl.textContent = (cStart.getTime()===cEnd.getTime()) ? fmtDate(cStart.getTime()) : (fmtDateShort(cStart.getTime()) + ' – ' + fmtDate(cEnd.getTime()));
@@ -662,7 +725,8 @@ function applyDateFilter(preset, cStart, cEnd){
   }
   document.querySelectorAll('.df-opt').forEach(b=> b.classList.toggle('active', b.dataset.preset===preset));
 
-  renderAll();
+  applyOverviewFilters();
+  resetRecordFiltersState();
 }
 
 /* =====================================================
@@ -702,6 +766,7 @@ function buildStaticFilterOptions(){
 
   const dl = document.getElementById('enterprise-list');
   dl.innerHTML = sortedEnterprises.map(e=>`<option value="${escapeHtml(e)}">`).join('');
+
   function fillSelect(id, values){
     const sel = document.getElementById(id);
     const keep = sel.querySelector('option[value=""]');
@@ -716,6 +781,9 @@ function buildStaticFilterOptions(){
   fillSelect('f-user', sortedUsers);
   fillSelect('f-category', sortedCats);
   fillSelect('f-action', sortedActions);
+  fillSelect('ov-f-user', sortedUsers);
+  fillSelect('ov-f-action', sortedActions);
+  fillSelect('ov-f-category', sortedCats);
 }
 
 function setSyncTime(){
@@ -765,7 +833,7 @@ function fetchLiveSheet(isRefresh){
     });
 }
 
-function handleFileUpload(file, isRefresh){
+function handleFileUpload(file){
   const reader = new FileReader();
   reader.onload = e => bootFromCsvText(e.target.result);
   reader.onerror = () => alert('Could not read that file.');
@@ -793,9 +861,9 @@ function wireStaticUI(){
   document.addEventListener('click', (e)=>{ if(!dfWrap.contains(e.target)) dfWrap.classList.remove('open'); });
 
   document.querySelectorAll('.df-opt[data-preset]').forEach(btn=>{
-    btn.addEventListener('click', (e)=>{
+    btn.addEventListener('click', ()=>{
       const preset = btn.dataset.preset;
-      if(preset==='custom'){ renderCalendar(); return; } // just keep panel open on calendar
+      if(preset==='custom'){ renderCalendar(); return; }
       applyDateFilter(preset);
       dfWrap.classList.remove('open');
     });
@@ -815,15 +883,29 @@ function wireStaticUI(){
   document.getElementById('refresh-btn').addEventListener('click', ()=> fetchLiveSheet(true));
   document.getElementById('upload-fallback-btn').addEventListener('click', ()=> document.getElementById('reupload-input').click());
   document.getElementById('reupload-input').addEventListener('change', (e)=>{
-    if(e.target.files[0]) handleFileUpload(e.target.files[0], true);
+    if(e.target.files[0]) handleFileUpload(e.target.files[0]);
   });
 
-  /* ---- table sorts ---- */
+  /* ---- overview table sorts ---- */
   document.getElementById('editor-sort').addEventListener('change', renderUserTable);
   document.getElementById('enterprise-sort').addEventListener('change', ()=> drawEnterpriseTable(document.getElementById('enterprise-table-search').value));
   document.getElementById('enterprise-table-search').addEventListener('input', (e)=> drawEnterpriseTable(e.target.value));
 
-  /* ---- cat bar toggle (created dynamically each render, wired inside renderCatBars) ---- */
+  /* ---- overview filter bar ---- */
+  ['ov-f-user','ov-f-action','ov-f-category'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', applyOverviewFilters);
+  });
+  document.getElementById('ov-f-enterprise').addEventListener('input', ()=>{
+    clearTimeout(window.__ovEntDebounce);
+    window.__ovEntDebounce = setTimeout(applyOverviewFilters, 250);
+  });
+  document.getElementById('ov-clear-filters').addEventListener('click', ()=>{
+    document.getElementById('ov-f-enterprise').value='';
+    document.getElementById('ov-f-user').value='';
+    document.getElementById('ov-f-action').value='';
+    document.getElementById('ov-f-category').value='';
+    applyOverviewFilters();
+  });
 
   /* ---- records tab filters ---- */
   ['f-enterprise','f-user','f-category','f-action','f-sort'].forEach(id=>{
@@ -930,12 +1012,39 @@ function renderCalendar(){
 }
 
 /* =====================================================
-   MAIN RENDER (recomputed every time the date filter changes)
+   OVERVIEW FILTER BAR (Enterprise / Editor / Action / Category)
+===================================================== */
+function computeOverviewData(){
+  const ent = document.getElementById('ov-f-enterprise').value.trim().toLowerCase();
+  const usr = document.getElementById('ov-f-user').value;
+  const act = document.getElementById('ov-f-action').value;
+  const cat = document.getElementById('ov-f-category').value;
+
+  if(!ent && !usr && !act && !cat){
+    OVERVIEW_DATA = DATA;
+    return;
+  }
+  OVERVIEW_DATA = DATA.filter(row=>{
+    if(ent && row[F.ENTERPRISE].toLowerCase().indexOf(ent)===-1) return false;
+    if(usr && row[F.USER]!==usr) return false;
+    if(act && row[F.ACTION]!==act) return false;
+    if(cat && row[F.COMMENT]!==cat) return false;
+    return true;
+  });
+}
+function applyOverviewFilters(){
+  computeOverviewData();
+  renderOverviewAggregates();
+}
+
+/* =====================================================
+   MAIN OVERVIEW RENDER (recomputed whenever date range or overview filters change)
 ===================================================== */
 let editorAggCache = [], enterpriseAggCache = [];
 
-function renderAll(){
-  const totalRows = DATA.length;
+function renderOverviewAggregates(){
+  const totalRows = OVERVIEW_DATA.length;
+  document.getElementById('ov-result-count').textContent = totalRows.toLocaleString() + ' record' + (totalRows===1?'':'s');
 
   const catCounts = new Map();
   const actionCounts = new Map();
@@ -945,7 +1054,7 @@ function renderAll(){
   const userSet = new Set();
 
   for(let i=0;i<totalRows;i++){
-    const row = DATA[i];
+    const row = OVERVIEW_DATA[i];
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER];
 
     catCounts.set(comment, (catCounts.get(comment)||0)+1);
@@ -968,26 +1077,25 @@ function renderAll(){
     return [best,bestN];
   }
 
-  document.getElementById('chip-rows').textContent = totalRows.toLocaleString();
-  document.getElementById('chip-editors').textContent = userSet.size;
-  document.getElementById('chip-cats').textContent = catCounts.size;
-  document.getElementById('tab-record-count').textContent = totalRows.toLocaleString();
+  document.getElementById('chip-rows').textContent = DATA.length.toLocaleString();
+  document.getElementById('chip-editors').textContent = new Set(DATA.map(r=>r[F.USER])).size;
+  document.getElementById('chip-cats').textContent = new Set(DATA.map(r=>r[F.COMMENT])).size;
+  document.getElementById('tab-record-count').textContent = DATA.length.toLocaleString();
 
   if(totalRows === 0){
     document.getElementById('s-total').textContent = '0';
     document.getElementById('s-editors').textContent = '0';
     document.getElementById('s-enterprises').textContent = '0';
-    document.getElementById('s-topcat').textContent = '–';
-    document.getElementById('s-topcat-count').textContent = '0 requests';
+    document.getElementById('s-topcat-foot').textContent = 'Top: – · –';
     document.getElementById('cat-bars').innerHTML = '';
     document.getElementById('cat-toggle').style.display = 'none';
+    document.getElementById('cat-section-hint').textContent = 'click a reason to see every editor behind it';
     document.getElementById('donut-svg').innerHTML = '';
     document.getElementById('donut-legend').innerHTML = '';
     document.getElementById('user-table').innerHTML = '';
     document.getElementById('enterprise-table').innerHTML = '';
-    document.getElementById('trend-wrap').innerHTML = '<div class="trend-empty">No data in this range</div>';
+    document.getElementById('trend-wrap').innerHTML = '<div class="trend-empty">No data for this filter combination</div>';
     editorAggCache = []; enterpriseAggCache = [];
-    resetRecordFiltersState();
     return;
   }
 
@@ -995,19 +1103,13 @@ function renderAll(){
   document.getElementById('s-total').textContent = totalRows.toLocaleString();
   document.getElementById('s-editors').textContent = userSet.size;
   document.getElementById('s-enterprises').textContent = enterpriseSet.size;
-  document.getElementById('s-topcat').textContent = topCat;
-  document.getElementById('s-topcat-count').textContent = topCatN.toLocaleString() + ' requests';
+  document.getElementById('s-topcat-foot').textContent = 'Top: ' + topCat + ' · ' + topCatN.toLocaleString() + ' requests';
+  document.getElementById('cat-section-hint').textContent = topCat + ' is the top reason (' + topCatN.toLocaleString() + ') — click any bar for editor detail';
 
-  /* ---------- Trend ---------- */
   renderTrend();
-
-  /* ---------- Category bars ---------- */
   renderCatBars(catCounts);
-
-  /* ---------- Donut ---------- */
   renderDonut(actionCounts, totalRows);
 
-  /* ---------- Editor / Enterprise aggregate caches ---------- */
   editorAggCache = [...userAgg.entries()].map(([user,agg])=>{
     const [tc] = topOfMap(agg.catMap);
     return { user, count:agg.count, topCat:tc, entCount: agg.entSet.size };
@@ -1020,17 +1122,14 @@ function renderAll(){
 
   renderUserTable();
   drawEnterpriseTable(document.getElementById('enterprise-table-search').value);
-
-  /* ---------- Records tab ---------- */
-  resetRecordFiltersState();
 }
 
 /* ---------- Trend chart (SVG, self-drawn) ---------- */
 function renderTrend(){
   const wrap = document.getElementById('trend-wrap');
-  const map = new Map(); // ts(day or week start) -> count
+  const map = new Map();
   let minTs = Infinity, maxTs = -Infinity;
-  DATA.forEach(row=>{
+  OVERVIEW_DATA.forEach(row=>{
     const ts = row[F.TS];
     if(isNaN(ts)) return;
     if(ts<minTs) minTs=ts; if(ts>maxTs) maxTs=ts;
@@ -1041,7 +1140,7 @@ function renderTrend(){
   const bucketByWeek = spanDays > 60;
   document.getElementById('trend-hint').textContent = bucketByWeek ? 'weekly volume' : 'daily volume';
 
-  DATA.forEach(row=>{
+  OVERVIEW_DATA.forEach(row=>{
     const ts = row[F.TS];
     if(isNaN(ts)) return;
     let key = ts;
@@ -1123,7 +1222,7 @@ function renderCatBars(catCounts){
     });
   }
   draw();
-  toggle.replaceWith(toggle.cloneNode(true)); // clear old listeners
+  toggle.replaceWith(toggle.cloneNode(true));
   const freshToggle = document.getElementById('cat-toggle');
   if(sorted.length > COLLAPSE_N){
     freshToggle.style.display = 'inline-block';
@@ -1240,7 +1339,7 @@ function drawEnterpriseTable(filterText){
 }
 
 /* =====================================================
-   TAB 3: DETAIL VIEWS (drill-down)
+   TAB 3: DETAIL VIEWS (drill-down, sortable, exportable)
 ===================================================== */
 function activateDetailTab(){
   const tabBtn = document.getElementById('tab-detail-btn');
@@ -1262,42 +1361,62 @@ function exportRowsToCsv(filename, headers, rows){
   setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
 }
 
-function renderDetailShell(eyebrow, title, sub, summaryStats, headers, rows, exportName, exportRows){
+/* opts: {eyebrow, title, sub, summaryStats, headers, list, rowMapper, exportName, exportMapper, sortOptions} */
+function renderDetailShell(opts){
+  let currentList = [...opts.list];
+  function applySort(value){
+    const opt = opts.sortOptions.find(o=>o.value===value) || opts.sortOptions[0];
+    currentList = [...opts.list].sort(opt.cmp);
+  }
+  applySort(opts.sortOptions[0].value);
+
+  function draw(){
+    const tableRows = currentList.map((row,i)=> `<tr>${opts.rowMapper(row,i).map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+    document.getElementById('detail-tbody').innerHTML = tableRows || `<tr><td colspan="${opts.headers.length}" style="text-align:center; color:var(--muted); padding:30px;">No matching records</td></tr>`;
+  }
+
   const view = document.getElementById('view-detail');
-  const tableRows = rows.map(cells => `<tr>${cells.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
   view.innerHTML = `
     <div class="detail-head">
       <button class="back-link" id="detail-back">← Back to overview</button>
-      <button class="export-btn" id="detail-export">⬇ Export CSV</button>
+      <div class="detail-head-right">
+        <div class="sort-field">
+          <label>Sort by</label>
+          <select id="detail-sort">${opts.sortOptions.map(o=>`<option value="${o.value}">${escapeHtml(o.label)}</option>`).join('')}</select>
+        </div>
+        <button class="export-btn" id="detail-export">⬇ Export CSV</button>
+      </div>
     </div>
-    <div class="detail-eyebrow">${escapeHtml(eyebrow)}</div>
-    <div class="detail-title">${escapeHtml(title)}</div>
-    <div class="detail-sub">${escapeHtml(sub)}</div>
+    <div class="detail-eyebrow">${escapeHtml(opts.eyebrow)}</div>
+    <div class="detail-title">${escapeHtml(opts.title)}</div>
+    <div class="detail-sub">${escapeHtml(opts.sub)}</div>
     <div class="detail-summary">
-      ${summaryStats.map(s=>`<div class="d-stat"><div class="d-label">${escapeHtml(s.label)}</div><div class="d-value">${escapeHtml(s.value)}</div></div>`).join('')}
+      ${opts.summaryStats.map(s=>`<div class="d-stat"><div class="d-label">${escapeHtml(s.label)}</div><div class="d-value">${escapeHtml(s.value)}</div></div>`).join('')}
     </div>
     <div class="panel" style="padding:8px 0 4px;">
       <div class="table-scroll">
         <table>
-          <thead><tr>${headers.map(h=>`<th${h===headers[0]?' style="padding-left:22px;"':''}>${escapeHtml(h)}</th>`).join('')}</tr></thead>
-          <tbody>${tableRows || `<tr><td colspan="${headers.length}" style="text-align:center; color:var(--muted); padding:30px;">No matching records</td></tr>`}</tbody>
+          <thead><tr>${opts.headers.map((h,i)=>`<th${i===0?' style="padding-left:22px;"':''}>${escapeHtml(h)}</th>`).join('')}</tr></thead>
+          <tbody id="detail-tbody"></tbody>
         </table>
       </div>
     </div>
   `;
+  draw();
+  document.getElementById('detail-sort').addEventListener('change', (e)=>{ applySort(e.target.value); draw(); });
   document.getElementById('detail-back').addEventListener('click', ()=>{
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.querySelector('.tab-btn[data-view="overview"]').classList.add('active');
     document.getElementById('view-overview').classList.add('active');
   });
-  document.getElementById('detail-export').addEventListener('click', ()=> exportRowsToCsv(exportName, headers, exportRows));
+  document.getElementById('detail-export').addEventListener('click', ()=> exportRowsToCsv(opts.exportName, opts.headers, currentList.map(opts.exportMapper)));
   activateDetailTab();
   window.scrollTo({top:0, behavior:'instant'});
 }
 
 function showReasonDetail(reason){
-  const rows = DATA.filter(r => r[F.COMMENT] === reason);
+  const rows = OVERVIEW_DATA.filter(r => r[F.COMMENT] === reason);
   const byUser = new Map();
   rows.forEach(r=>{
     const user = r[F.USER];
@@ -1305,27 +1424,38 @@ function showReasonDetail(reason){
     if(!u){ u = {count:0, entSet:new Set()}; byUser.set(user,u); }
     u.count++; u.entSet.add(r[F.ENTERPRISE]);
   });
-  const list = [...byUser.entries()].map(([user,agg])=>({user, count:agg.count, entCount:agg.entSet.size})).sort((a,b)=>b.count-a.count);
   const total = rows.length;
-  const tableRows = list.map((r,i)=>[
-    `<span class="rank-badge">${i+1}</span>`,
-    `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.user)}">${initials(r.user)}</div><span>${escapeHtml(r.user)}</span></div>`,
-    `<span class="bignum">${r.count.toLocaleString()}</span>`,
-    `<span class="mono-cell">${r.entCount}</span>`,
-    `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
-  ]);
-  renderDetailShell(
-    'Rework reason', reason, `${total.toLocaleString()} rework requests in the selected date range, across ${byUser.size} editor${byUser.size===1?'':'s'}.`,
-    [{label:'Total requests', value:total.toLocaleString()}, {label:'Editors involved', value:byUser.size}],
-    ['#','Editor','Requests','Enterprises touched','Share'],
-    tableRows, 'reason_'+reason.replace(/[^a-z0-9]+/ig,'_')+'.csv',
-    list.map(r=>[r.user, r.count, r.entCount, (r.count/total*100).toFixed(1)+'%'])
-  );
+  const list = [...byUser.entries()].map(([user,agg])=>({user, count:agg.count, entCount:agg.entSet.size}));
+
+  renderDetailShell({
+    eyebrow: 'Rework reason',
+    title: reason,
+    sub: `${total.toLocaleString()} rework requests in the current filter, across ${byUser.size} editor${byUser.size===1?'':'s'}.`,
+    summaryStats: [{label:'Total requests', value:total.toLocaleString()}, {label:'Editors involved', value:byUser.size}],
+    headers: ['#','Editor','Requests','Enterprises touched','Share'],
+    list,
+    sortOptions: [
+      {value:'count_desc', label:'Requests (high → low)', cmp:(a,b)=>b.count-a.count},
+      {value:'count_asc', label:'Requests (low → high)', cmp:(a,b)=>a.count-b.count},
+      {value:'name_asc', label:'Editor (A → Z)', cmp:(a,b)=>a.user.localeCompare(b.user)},
+      {value:'name_desc', label:'Editor (Z → A)', cmp:(a,b)=>b.user.localeCompare(a.user)},
+      {value:'ent_desc', label:'Enterprises touched (high → low)', cmp:(a,b)=>b.entCount-a.entCount},
+    ],
+    rowMapper: (r,i)=>[
+      `<span class="rank-badge">${i+1}</span>`,
+      `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.user)}">${initials(r.user)}</div><span>${escapeHtml(r.user)}</span></div>`,
+      `<span class="bignum">${r.count.toLocaleString()}</span>`,
+      `<span class="mono-cell">${r.entCount}</span>`,
+      `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
+    ],
+    exportName: 'reason_'+reason.replace(/[^a-z0-9]+/ig,'_')+'.csv',
+    exportMapper: r=>[r.user, r.count, r.entCount, (r.count/total*100).toFixed(1)+'%']
+  });
 }
 
 function showEditorDetail(user){
-  const rows = DATA.filter(r => r[F.USER] === user);
-  const byPair = new Map(); // enterprise||reason -> count
+  const rows = OVERVIEW_DATA.filter(r => r[F.USER] === user);
+  const byPair = new Map();
   rows.forEach(r=>{
     const key = r[F.ENTERPRISE] + '||' + r[F.COMMENT];
     byPair.set(key, (byPair.get(key)||0)+1);
@@ -1335,25 +1465,36 @@ function showEditorDetail(user){
   const list = [...byPair.entries()].map(([key,count])=>{
     const [enterprise, reason] = key.split('||');
     return {enterprise, reason, count};
-  }).sort((a,b)=>b.count-a.count);
-  const tableRows = list.map(r=>[
-    `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.enterprise)}; border-radius:7px; font-size:10px;">${escapeHtml(r.enterprise.slice(0,2).toUpperCase())}</div><span>${escapeHtml(r.enterprise)}</span></div>`,
-    `${escapeHtml(r.reason)}`,
-    `<span class="bignum">${r.count.toLocaleString()}</span>`,
-    `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
-  ]);
-  renderDetailShell(
-    'Editor', user, `${total.toLocaleString()} rework requests logged by this editor, across ${entTouched} enterprise${entTouched===1?'':'s'}.`,
-    [{label:'Total requests', value:total.toLocaleString()}, {label:'Enterprises touched', value:entTouched}],
-    ['Enterprise','Rework reason','Count','Share'],
-    tableRows, 'editor_'+user.replace(/[^a-z0-9]+/ig,'_')+'.csv',
-    list.map(r=>[r.enterprise, r.reason, r.count, (r.count/total*100).toFixed(1)+'%'])
-  );
+  });
+
+  renderDetailShell({
+    eyebrow: 'Editor',
+    title: user,
+    sub: `${total.toLocaleString()} rework requests logged by this editor, across ${entTouched} enterprise${entTouched===1?'':'s'}.`,
+    summaryStats: [{label:'Total requests', value:total.toLocaleString()}, {label:'Enterprises touched', value:entTouched}],
+    headers: ['Enterprise','Rework reason','Count','Share'],
+    list,
+    sortOptions: [
+      {value:'count_desc', label:'Count (high → low)', cmp:(a,b)=>b.count-a.count},
+      {value:'count_asc', label:'Count (low → high)', cmp:(a,b)=>a.count-b.count},
+      {value:'ent_asc', label:'Enterprise (A → Z)', cmp:(a,b)=>a.enterprise.localeCompare(b.enterprise)},
+      {value:'ent_desc', label:'Enterprise (Z → A)', cmp:(a,b)=>b.enterprise.localeCompare(a.enterprise)},
+      {value:'reason_asc', label:'Rework reason (A → Z)', cmp:(a,b)=>a.reason.localeCompare(b.reason)},
+    ],
+    rowMapper: (r)=>[
+      `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.enterprise)}; border-radius:7px; font-size:10px;">${escapeHtml(r.enterprise.slice(0,2).toUpperCase())}</div><span>${escapeHtml(r.enterprise)}</span></div>`,
+      `${escapeHtml(r.reason)}`,
+      `<span class="bignum">${r.count.toLocaleString()}</span>`,
+      `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
+    ],
+    exportName: 'editor_'+user.replace(/[^a-z0-9]+/ig,'_')+'.csv',
+    exportMapper: r=>[r.enterprise, r.reason, r.count, (r.count/total*100).toFixed(1)+'%']
+  });
 }
 
 function showEnterpriseDetail(enterprise){
-  const rows = DATA.filter(r => r[F.ENTERPRISE] === enterprise);
-  const byPair = new Map(); // user||reason -> count
+  const rows = OVERVIEW_DATA.filter(r => r[F.ENTERPRISE] === enterprise);
+  const byPair = new Map();
   rows.forEach(r=>{
     const key = r[F.USER] + '||' + r[F.COMMENT];
     byPair.set(key, (byPair.get(key)||0)+1);
@@ -1363,20 +1504,31 @@ function showEnterpriseDetail(enterprise){
   const list = [...byPair.entries()].map(([key,count])=>{
     const [user, reason] = key.split('||');
     return {user, reason, count};
-  }).sort((a,b)=>b.count-a.count);
-  const tableRows = list.map(r=>[
-    `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.user)}">${initials(r.user)}</div><span>${escapeHtml(r.user)}</span></div>`,
-    `${escapeHtml(r.reason)}`,
-    `<span class="bignum">${r.count.toLocaleString()}</span>`,
-    `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
-  ]);
-  renderDetailShell(
-    'Enterprise', enterprise, `${total.toLocaleString()} rework requests logged for this enterprise, across ${usersTouched} editor${usersTouched===1?'':'s'}.`,
-    [{label:'Total requests', value:total.toLocaleString()}, {label:'Editors involved', value:usersTouched}],
-    ['Editor','Rework reason','Count','Share'],
-    tableRows, 'enterprise_'+enterprise.replace(/[^a-z0-9]+/ig,'_')+'.csv',
-    list.map(r=>[r.user, r.reason, r.count, (r.count/total*100).toFixed(1)+'%'])
-  );
+  });
+
+  renderDetailShell({
+    eyebrow: 'Enterprise',
+    title: enterprise,
+    sub: `${total.toLocaleString()} rework requests logged for this enterprise, across ${usersTouched} editor${usersTouched===1?'':'s'}.`,
+    summaryStats: [{label:'Total requests', value:total.toLocaleString()}, {label:'Editors involved', value:usersTouched}],
+    headers: ['Editor','Rework reason','Count','Share'],
+    list,
+    sortOptions: [
+      {value:'count_desc', label:'Count (high → low)', cmp:(a,b)=>b.count-a.count},
+      {value:'count_asc', label:'Count (low → high)', cmp:(a,b)=>a.count-b.count},
+      {value:'user_asc', label:'Editor (A → Z)', cmp:(a,b)=>a.user.localeCompare(b.user)},
+      {value:'user_desc', label:'Editor (Z → A)', cmp:(a,b)=>b.user.localeCompare(a.user)},
+      {value:'reason_asc', label:'Rework reason (A → Z)', cmp:(a,b)=>a.reason.localeCompare(b.reason)},
+    ],
+    rowMapper: (r)=>[
+      `<div class="name-cell"><div class="avatar" style="background:${colorFor(r.user)}">${initials(r.user)}</div><span>${escapeHtml(r.user)}</span></div>`,
+      `${escapeHtml(r.reason)}`,
+      `<span class="bignum">${r.count.toLocaleString()}</span>`,
+      `<span class="mono-cell">${(r.count/total*100).toFixed(1)}%</span>`
+    ],
+    exportName: 'enterprise_'+enterprise.replace(/[^a-z0-9]+/ig,'_')+'.csv',
+    exportMapper: r=>[r.user, r.reason, r.count, (r.count/total*100).toFixed(1)+'%']
+  });
 }
 
 /* =====================================================
@@ -1384,7 +1536,7 @@ function showEnterpriseDetail(enterprise){
 ===================================================== */
 const PAGE_SIZE = 30;
 let currentPage = 1;
-let filteredIdx = null; // null = all rows of DATA, else array of indices into DATA
+let filteredIdx = null;
 
 function resetRecordFiltersState(){
   filteredIdx = null;
@@ -1413,7 +1565,7 @@ function applyRecordFilters(){
   } else {
     for(let i=0;i<DATA.length;i++){
       const row = DATA[i];
-      if(ent && row[F.ENTERPRISE].toLowerCase()!==ent) continue;
+      if(ent && row[F.ENTERPRISE].toLowerCase().indexOf(ent)===-1) continue;
       if(usr && row[F.USER]!==usr) continue;
       if(cat && row[F.COMMENT]!==cat) continue;
       if(act && row[F.ACTION]!==act) continue;
@@ -1428,7 +1580,7 @@ function applyRecordFilters(){
     case 'date_asc': out.sort((a,b)=> DATA[a][F.TS]-DATA[b][F.TS]); break;
     case 'ent_asc': out.sort((a,b)=> DATA[a][F.ENTERPRISE].localeCompare(DATA[b][F.ENTERPRISE])); break;
     case 'user_asc': out.sort((a,b)=> DATA[a][F.USER].localeCompare(DATA[b][F.USER])); break;
-    default: out.sort((a,b)=> DATA[b][F.TS]-DATA[a][F.TS]); // date_desc
+    default: out.sort((a,b)=> DATA[b][F.TS]-DATA[a][F.TS]);
   }
   filteredIdx = out;
   currentPage = 1;
@@ -1457,9 +1609,9 @@ function renderRecordGrid(){
     const {row, idx} = getRow(li);
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER], inUrl = row[F.IN], outUrl = row[F.OUT];
     const pillClass = action === 'qc_editingtool' ? 'pill-qc' : 'pill-reedit';
-    const inSide = inUrl ? `<div class="side in" data-tag="Input"><img loading="lazy" src="${escapeHtml(inUrl)}" alt="input" onerror="imgErr(this)"></div>`
+    const inSide = inUrl ? `<div class="side in" data-tag="Input"><img loading="lazy" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-retries="0" src="${escapeHtml(inUrl)}" alt="input" onerror="imgErr(this)"></div>`
                           : `<div class="side missing" data-tag="Input">No input image</div>`;
-    const outSide = outUrl ? `<div class="side out" data-tag="AI Output"><img loading="lazy" src="${escapeHtml(outUrl)}" alt="output" onerror="imgErr(this)"></div>`
+    const outSide = outUrl ? `<div class="side out" data-tag="AI Output"><img loading="lazy" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-retries="0" src="${escapeHtml(outUrl)}" alt="output" onerror="imgErr(this)"></div>`
                             : `<div class="side missing out" data-tag="AI Output">No output image</div>`;
     html += `<div class="rcard" data-idx="${idx}">
       <div class="compare">
@@ -1495,7 +1647,10 @@ window.openModal = function(idx){
   const row = DATA[idx];
   const modalIn = document.getElementById('modal-img-in');
   const modalOut = document.getElementById('modal-img-out');
-  modalIn.closest('.slider-wrap').querySelectorAll('.side, .broken').forEach(()=>{});
+  clearModalBrokenNotes();
+  modalIn.style.display=''; modalOut.style.display='';
+  modalIn.dataset.rawUrl = row[F.IN] || ''; modalIn.dataset.retries = '0';
+  modalOut.dataset.rawUrl = row[F.OUT] || ''; modalOut.dataset.retries = '0';
   modalIn.src = row[F.IN] || '';
   modalOut.src = row[F.OUT] || '';
   document.getElementById('modal-title').textContent = row[F.ENTERPRISE] + ' — ' + row[F.COMMENT];
@@ -1517,7 +1672,7 @@ function setSlider(pct){
 ===================================================== */
 document.getElementById('boot-retry').addEventListener('click', ()=> fetchLiveSheet(false));
 document.getElementById('boot-file-input').addEventListener('change', (e)=>{
-  if(e.target.files[0]) handleFileUpload(e.target.files[0], false);
+  if(e.target.files[0]) handleFileUpload(e.target.files[0]);
 });
 
 fetchLiveSheet(false);
