@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image Rework Intelligence · QC Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://wsrv.nl" crossorigin>
+<link rel="dns-prefetch" href="https://wsrv.nl">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
@@ -203,6 +205,16 @@
   .rcard{ background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; cursor:pointer; transition:.15s ease; }
   .rcard:hover{ border-color:#333a4d; transform:translateY(-2px); }
   .rcard .compare{ display:grid; grid-template-columns:1fr 1fr; position:relative; background:#05060a; }
+  .checker-bg{
+    background-color:#1a1e29;
+    background-image:
+      linear-gradient(45deg, #2a3040 25%, transparent 25%),
+      linear-gradient(-45deg, #2a3040 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #2a3040 75%),
+      linear-gradient(-45deg, transparent 75%, #2a3040 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  }
   .rcard .compare .side{ position:relative; aspect-ratio: 4/3; overflow:hidden; display:flex; align-items:center; justify-content:center; }
   .rcard .compare .side img{ width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity .25s ease; }
   .rcard .compare .side img.loaded{ opacity:1; }
@@ -248,7 +260,7 @@
   .modal-side-nav:disabled{ opacity:.25; cursor:not-allowed; }
   .modal-side-nav.prev{ left:14px; }
   .modal-side-nav.next{ right:14px; }
-  .slider-wrap{ position:relative; width:100%; aspect-ratio:16/10; overflow:hidden; background:#05060a; user-select:none; }
+  .slider-wrap{ position:relative; width:100%; aspect-ratio:16/10; overflow:hidden; user-select:none; }
   .slider-wrap img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:block; opacity:0; transition:opacity .2s ease; }
   .slider-wrap img.loaded{ opacity:1; }
   .slider-wrap .over{ clip-path: inset(0 50% 0 0); }
@@ -582,7 +594,7 @@
       </div>
     </div>
     <div class="side-labels"><span>Input</span><span>Drag to compare</span><span>AI Output</span></div>
-    <div class="slider-wrap" id="slider-wrap">
+    <div class="slider-wrap checker-bg" id="slider-wrap">
       <button class="modal-side-nav prev" id="modal-side-prev" title="Previous (←)">‹</button>
       <button class="modal-side-nav next" id="modal-side-next" title="Next (→)">›</button>
       <div class="modal-loading" id="modal-loading"><div class="spin-sm"></div></div>
@@ -627,29 +639,18 @@ function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---- fast image URLs: rewrite known hosts (Google Drive / lh3.googleusercontent) to a
-        right-sized thumbnail instead of always pulling the full "hres" original. This is
-        the main lever for load speed — a 400px grid thumbnail is a fraction of the bytes
-        of a multi-megapixel hi-res photo. Unknown hosts are returned unchanged. ---- */
-function driveFileId(url){
-  if(!url) return null;
-  let m = url.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
-  if(m) return m[1];
-  m = url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
-  if(m) return m[1];
-  return null;
-}
+/* ---- fast, transparency-safe image URLs -------------------------------------------------
+   Every image is routed through wsrv.nl, a free edge-cached resizing proxy that works with
+   ANY source host (Drive, S3, direct CDN links, etc). This is the main lever for load speed —
+   a 400px grid thumbnail is a fraction of the bytes of a multi-megapixel "hres" original, and
+   the proxy's edge cache makes repeat views near-instant.
+   Crucially it's requested as WebP, which (unlike Google Drive's own JPEG-only thumbnail
+   endpoint) supports an alpha channel — so a transparent "remove background" output PNG stays
+   transparent instead of getting flattened to a solid black/white square. ---- */
 function thumbUrl(url, size){
   if(!url) return url;
   try{
-    if(/lh3\.googleusercontent\.com/.test(url)){
-      // strip any existing size suffix like =s1600 / =w2000-h2000 and add our own
-      return url.replace(/=s\d+.*$/,'').replace(/=w\d+-h\d+.*$/,'') + '=w' + size;
-    }
-    if(/drive\.google\.com/.test(url)){
-      const id = driveFileId(url);
-      if(id) return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w' + size;
-    }
+    return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + size + '&output=webp&q=82&we=1';
   }catch(e){ /* fall through to original url */ }
   return url;
 }
@@ -1692,10 +1693,10 @@ function renderRecordGrid(){
     const {row, idx} = getRow(li);
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER], inUrl = row[F.IN], outUrl = row[F.OUT];
     const pillClass = action === 'qc_editingtool' ? 'pill-qc' : 'pill-reedit';
-    const inThumb = thumbUrl(inUrl, 480), outThumb = thumbUrl(outUrl, 480);
-    const inSide = inUrl ? `<div class="side in" data-tag="Input"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(inThumb)}" data-retries="0" src="${escapeHtml(inThumb)}" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const inThumb = thumbUrl(inUrl, 380), outThumb = thumbUrl(outUrl, 380);
+    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(inThumb)}" data-retries="0" src="${escapeHtml(inThumb)}" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                           : `<div class="side missing" data-tag="Input">No input image</div>`;
-    const outSide = outUrl ? `<div class="side out" data-tag="AI Output"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(outThumb)}" data-retries="0" src="${escapeHtml(outThumb)}" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(outThumb)}" data-retries="0" src="${escapeHtml(outThumb)}" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                             : `<div class="side missing out" data-tag="AI Output">No output image</div>`;
     html += `<div class="rcard" data-idx="${idx}">
       <div class="compare">
@@ -1741,7 +1742,7 @@ function preloadRow(dataIdx){
     if(!url) return;
     const im = new Image();
     im.referrerPolicy = 'no-referrer';
-    im.src = thumbUrl(url, 1600);
+    im.src = thumbUrl(url, 1300);
   });
 }
 
@@ -1771,7 +1772,7 @@ function renderModalAt(pos){
   modalIn.classList.remove('loaded'); modalOut.classList.remove('loaded');
 
   const inUrl = row[F.IN] || '', outUrl = row[F.OUT] || '';
-  const inFast = thumbUrl(inUrl, 1600), outFast = thumbUrl(outUrl, 1600);
+  const inFast = thumbUrl(inUrl, 1300), outFast = thumbUrl(outUrl, 1300);
 
   modalIn.dataset.rawUrl = inUrl; modalIn.dataset.fastUrl = inFast; modalIn.dataset.retries = '0';
   modalOut.dataset.rawUrl = outUrl; modalOut.dataset.fastUrl = outFast; modalOut.dataset.retries = '0';
