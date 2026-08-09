@@ -593,7 +593,11 @@
         <button class="modal-close" id="modal-close">✕</button>
       </div>
     </div>
-    <div class="side-labels"><span>Input</span><span>Drag to compare</span><span>AI Output</span></div>
+    <div class="side-labels">
+      <span>Input <a id="modal-open-in" href="#" target="_blank" rel="noopener noreferrer" style="display:none; margin-left:8px; color:var(--orange); text-decoration:underline; text-transform:none; letter-spacing:0;">view raw file ↗</a></span>
+      <span>Drag to compare</span>
+      <span>AI Output <a id="modal-open-out" href="#" target="_blank" rel="noopener noreferrer" style="display:none; margin-left:8px; color:var(--orange); text-decoration:underline; text-transform:none; letter-spacing:0;">view raw file ↗</a></span>
+    </div>
     <div class="slider-wrap checker-bg" id="slider-wrap">
       <button class="modal-side-nav prev" id="modal-side-prev" title="Previous (←)">‹</button>
       <button class="modal-side-nav next" id="modal-side-next" title="Next (→)">›</button>
@@ -1742,8 +1746,34 @@ function preloadRow(dataIdx){
     if(!url) return;
     const im = new Image();
     im.referrerPolicy = 'no-referrer';
-    im.src = thumbUrl(url, 1300);
+    im.src = thumbUrl(url, 700);
   });
+}
+
+/* Show a small fast preview immediately (near-instant, from the resize proxy), then swap to
+   the exact, untouched raw file in the background once it's downloaded. Guarantees the
+   compare slider always settles on the real source image — never a lossy/approximate one —
+   while still feeling instant to open. */
+function loadModalImage(imgEl, rawUrl, previewUrl){
+  imgEl.classList.remove('loaded');
+  imgEl.dataset.rawUrl = rawUrl || '';
+  imgEl.dataset.fastUrl = previewUrl || '';
+  imgEl.dataset.retries = '0';
+  imgEl.dataset.exact = '0';
+  if(!rawUrl){ imgEl.style.display='none'; imgEl.removeAttribute('src'); return; }
+  imgEl.style.display = '';
+  imgEl.src = previewUrl;
+
+  const upgrade = new Image();
+  upgrade.referrerPolicy = 'no-referrer';
+  upgrade.onload = ()=>{
+    // only apply if the modal hasn't moved on to a different record in the meantime
+    if(imgEl.dataset.rawUrl === rawUrl){
+      imgEl.dataset.exact = '1';
+      imgEl.src = rawUrl;
+    }
+  };
+  upgrade.src = rawUrl;
 }
 
 window.openModal = function(idx){
@@ -1769,16 +1799,10 @@ function renderModalAt(pos){
   const modalOut = document.getElementById('modal-img-out');
   clearModalBrokenNotes();
   modalIn.style.display=''; modalOut.style.display='';
-  modalIn.classList.remove('loaded'); modalOut.classList.remove('loaded');
 
   const inUrl = row[F.IN] || '', outUrl = row[F.OUT] || '';
-  const inFast = thumbUrl(inUrl, 1300), outFast = thumbUrl(outUrl, 1300);
-
-  modalIn.dataset.rawUrl = inUrl; modalIn.dataset.fastUrl = inFast; modalIn.dataset.retries = '0';
-  modalOut.dataset.rawUrl = outUrl; modalOut.dataset.fastUrl = outFast; modalOut.dataset.retries = '0';
-
-  if(inUrl){ modalIn.src = inFast; } else { modalIn.style.display='none'; }
-  if(outUrl){ modalOut.src = outFast; } else { modalOut.style.display='none'; }
+  loadModalImage(modalIn, inUrl, thumbUrl(inUrl, 700));
+  loadModalImage(modalOut, outUrl, thumbUrl(outUrl, 700));
   updateModalLoading();
 
   // Flag the case that actually confused users: no distinct output, or output === input.
@@ -1801,6 +1825,11 @@ function renderModalAt(pos){
   document.getElementById('modal-comment').textContent = row[F.COMMENT];
   document.getElementById('modal-action').textContent = row[F.ACTION];
   document.getElementById('modal-pos').textContent = (pos+1) + ' / ' + modalOrder.length;
+
+  const inLink = document.getElementById('modal-open-in');
+  const outLink = document.getElementById('modal-open-out');
+  if(inUrl){ inLink.href = inUrl; inLink.style.display=''; } else { inLink.style.display='none'; }
+  if(outUrl){ outLink.href = outUrl; outLink.style.display=''; } else { outLink.style.display='none'; }
 
   const atStart = pos<=0, atEnd = pos>=modalOrder.length-1;
   ['modal-prev-btn','modal-side-prev'].forEach(id=> document.getElementById(id).disabled = atStart);
