@@ -603,8 +603,8 @@
       <button class="modal-side-nav prev" id="modal-side-prev" title="Previous (←)">‹</button>
       <button class="modal-side-nav next" id="modal-side-next" title="Next (→)">›</button>
       <div class="modal-loading" id="modal-loading"><div class="spin-sm"></div></div>
-      <img id="modal-img-in" alt="input" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
-      <img id="modal-img-out" class="over" alt="output" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
+      <img id="modal-img-in" alt="input" referrerpolicy="no-referrer" fetchpriority="high" onerror="imgErr(this)" onload="imgOk(this)">
+      <img id="modal-img-out" class="over" alt="output" referrerpolicy="no-referrer" fetchpriority="high" onerror="imgErr(this)" onload="imgOk(this)">
       <div class="slider-handle" id="slider-handle"></div>
     </div>
     <div class="modal-body-meta">
@@ -654,7 +654,7 @@ function escapeHtml(s){
    the untouched raw file, so a thumbnail issue never blocks the actual image from showing. */
 function gridThumbUrl(url, width){
   if(!url) return url;
-  try{ return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + width + '&output=webp&q=80&we=1'; }
+  try{ return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + width + '&output=webp&q=72&we=1'; }
   catch(e){ return url; }
 }
 
@@ -1752,9 +1752,9 @@ function renderRecordGrid(){
     const {row, idx} = getRow(li);
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER], inUrl = row[F.IN], outUrl = row[F.OUT];
     const pillClass = action === 'qc_editingtool' ? 'pill-qc' : 'pill-reedit';
-    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(inUrl,380))}" data-src="${escapeHtml(gridThumbUrl(inUrl,380))}" data-retries="0" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img decoding="async" referrerpolicy="no-referrer" fetchpriority="low" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(inUrl,320))}" data-src="${escapeHtml(gridThumbUrl(inUrl,320))}" data-retries="0" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                           : `<div class="side missing" data-tag="Input">No input image</div>`;
-    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(outUrl,380))}" data-src="${escapeHtml(gridThumbUrl(outUrl,380))}" data-retries="0" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img decoding="async" referrerpolicy="no-referrer" fetchpriority="low" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(outUrl,320))}" data-src="${escapeHtml(gridThumbUrl(outUrl,320))}" data-retries="0" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                             : `<div class="side missing out" data-tag="AI Output">No output image</div>`;
     html += `<div class="rcard" data-idx="${idx}">
       <div class="compare">
@@ -1799,26 +1799,41 @@ function preloadRow(dataIdx){
   const row = DATA[dataIdx];
   [row[F.IN], row[F.OUT]].forEach(url=>{
     if(!url) return;
+    // small thumbnail first (cheap, makes the next/prev open feel instant)
+    const thumb = new Image();
+    thumb.referrerPolicy = 'no-referrer';
+    thumb.src = gridThumbUrl(url, 320);
+    // full raw file at low priority, never competing with whatever's currently open
     ImageQueue.enqueue((done)=>{
       const im = new Image();
       im.referrerPolicy = 'no-referrer';
       im.onload = done; im.onerror = done;
       im.src = url;
-    }, false); // low priority — never competes with what's currently open
+    }, false);
   });
 }
 
-/* Always loads the exact raw file — no resizing/re-encoding step — so the compare slider
-   is guaranteed to show precisely what's in the sheet. Loaded directly (not through the
-   shared grid queue) so it can never be stuck waiting behind grid thumbnails that are
-   already mid-download. */
-function loadModalImage(imgEl, rawUrl){
+/* Opens on the small fast thumbnail instantly (almost always already in the browser's cache,
+   since the grid just showed this exact thumbnail a moment ago), then silently swaps to the
+   exact, untouched raw file the moment it finishes downloading in the background. The compare
+   slider always ends up on the true source file — this is just about not staring at a spinner
+   for a multi-megapixel download before anything appears. */
+function loadModalImage(imgEl, rawUrl, previewUrl){
   imgEl.classList.remove('loaded');
   imgEl.dataset.rawUrl = rawUrl || '';
   imgEl.dataset.retries = '0';
   if(!rawUrl){ imgEl.style.display='none'; imgEl.removeAttribute('src'); return; }
   imgEl.style.display = '';
-  imgEl.src = rawUrl;
+  imgEl.src = previewUrl || rawUrl;
+
+  if(previewUrl && previewUrl !== rawUrl){
+    const upgrade = new Image();
+    upgrade.referrerPolicy = 'no-referrer';
+    upgrade.onload = ()=>{
+      if(imgEl.dataset.rawUrl === rawUrl) imgEl.src = rawUrl; // only if still on this record
+    };
+    upgrade.src = rawUrl;
+  }
 }
 
 window.openModal = function(idx){
@@ -1846,8 +1861,8 @@ function renderModalAt(pos){
   modalIn.style.display=''; modalOut.style.display='';
 
   const inUrl = row[F.IN] || '', outUrl = row[F.OUT] || '';
-  loadModalImage(modalIn, inUrl);
-  loadModalImage(modalOut, outUrl);
+  loadModalImage(modalIn, inUrl, gridThumbUrl(inUrl, 320));
+  loadModalImage(modalOut, outUrl, gridThumbUrl(outUrl, 320));
   updateModalLoading();
 
   // Flag the case that actually confused users: no distinct output, or output === input.
