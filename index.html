@@ -381,7 +381,13 @@
       <button class="upload-fallback" id="upload-fallback-btn">or upload CSV</button>
       <input type="file" id="reupload-input" accept=".csv" style="display:none;">
     </div>
+    <div class="sync-box" id="speed-box" title="Average time for a grid thumbnail to finish downloading">
+      <span>⚡ Avg image load <b id="speed-avg" style="color:var(--text);">–</b></span>
+      <button class="refresh-btn" id="proxy-toggle-btn" title="Switch between small pre-resized thumbnails and the full original file">Thumbnails: ON</button>
+    </div>
   </div>
+
+  <div class="hint" id="speed-hint" style="font-family:var(--mono); font-size:11px; color:var(--muted-2); margin:-14px 0 20px; text-transform:uppercase; letter-spacing:.05em;"></div>
 
   <div class="tabs" id="tabs">
     <button class="tab-btn active" data-view="overview">01 · Overview</button>
@@ -651,12 +657,46 @@ function escapeHtml(s){
    Routed through wsrv.nl, a free edge-cached resizing proxy that works with any source host
    and preserves alpha transparency (served as WebP), so removed-background PNGs still render
    correctly. If the proxy ever fails for a given URL, imgErr() below falls straight back to
-   the untouched raw file, so a thumbnail issue never blocks the actual image from showing. */
+   the untouched raw file, so a thumbnail issue never blocks the actual image from showing.
+   USE_PROXY can be flipped off (via the "Thumbnails: ON/OFF" button) to test whether the
+   proxy itself is the bottleneck — if turning it off makes things faster, the real limit is
+   the proxy's own capacity, not our code; if it makes things slower, the limit is the
+   original image host, and the proxy is already helping as much as it can. ---- */
+let USE_PROXY = true;
 function gridThumbUrl(url, width){
   if(!url) return url;
+  if(!USE_PROXY) return url;
   try{ return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + width + '&output=webp&q=72&we=1'; }
   catch(e){ return url; }
 }
+
+/* ---- live "how slow actually is this" instrumentation ----------------------------------
+   Tracks real wall-clock time from request-start to load/error for every grid thumbnail, and
+   shows a running average in the header. This turns "it feels slow" into an actual number, and
+   makes it obvious whether load times are dominated by network/host latency (which no amount
+   of client-side scheduling can fix) rather than anything in the page itself. ---- */
+const LoadTimer = (function(){
+  let samples = [];
+  const MAX_SAMPLES = 60;
+  function record(ms){
+    samples.push(ms);
+    if(samples.length > MAX_SAMPLES) samples.shift();
+    render();
+  }
+  function render(){
+    const el = document.getElementById('speed-avg');
+    const hint = document.getElementById('speed-hint');
+    if(!el) return;
+    if(!samples.length){ el.textContent = '–'; if(hint) hint.textContent=''; return; }
+    const avg = samples.reduce((a,b)=>a+b,0) / samples.length;
+    const max = Math.max(...samples);
+    el.textContent = Math.round(avg).toLocaleString() + 'ms';
+    if(hint){
+      hint.textContent = `based on the last ${samples.length} image${samples.length===1?'':'s'} · slowest ${Math.round(max).toLocaleString()}ms · ${USE_PROXY ? 'via fast thumbnails' : 'direct from source, no proxy'} — high numbers here mean the image host itself is slow to respond, not something client-side scheduling can fix`;
+    }
+  }
+  return { record, reset(){ samples = []; render(); } };
+})();
 
 /* ---- queue-throttled grid loading -------------------------------------------------------
    Speed comes from (a) only starting a request once a card is actually about to be visible
@@ -683,8 +723,13 @@ const ImageQueue = (function(){
 function scheduleImageLoad(imgEl, url, priority){
   if(!url) return;
   ImageQueue.enqueue((done)=>{
+    const t0 = performance.now();
     let settled = false;
-    const finish = ()=>{ if(settled) return; settled = true; imgEl.removeEventListener('load', finish); imgEl.removeEventListener('error', finish); done(); };
+    const finish = ()=>{
+      if(settled) return; settled = true;
+      LoadTimer.record(performance.now() - t0);
+      imgEl.removeEventListener('load', finish); imgEl.removeEventListener('error', finish); done();
+    };
     imgEl.addEventListener('load', finish, {once:true});
     imgEl.addEventListener('error', finish, {once:true});
     imgEl.src = url;
@@ -997,6 +1042,14 @@ function wireStaticUI(){
   document.getElementById('upload-fallback-btn').addEventListener('click', ()=> document.getElementById('reupload-input').click());
   document.getElementById('reupload-input').addEventListener('change', (e)=>{
     if(e.target.files[0]) handleFileUpload(e.target.files[0]);
+  });
+
+  /* ---- speed diagnostics / proxy toggle ---- */
+  document.getElementById('proxy-toggle-btn').addEventListener('click', ()=>{
+    USE_PROXY = !USE_PROXY;
+    document.getElementById('proxy-toggle-btn').textContent = 'Thumbnails: ' + (USE_PROXY ? 'ON' : 'OFF');
+    LoadTimer.reset();
+    renderRecordGrid(); // re-render so the current page reflects the new mode immediately
   });
 
   /* ---- overview table sorts ---- */
@@ -1658,7 +1711,7 @@ function showEnterpriseDetail(enterprise){
 /* =====================================================
    TAB 2: RECORD VIEWER (paginated, filterable, sortable)
 ===================================================== */
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 18;
 let currentPage = 1;
 let filteredIdx = null;
 
