@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image Rework Intelligence · QC Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://wsrv.nl" crossorigin>
-<link rel="dns-prefetch" href="https://wsrv.nl">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
@@ -263,7 +261,8 @@
   .slider-wrap{ position:relative; width:100%; aspect-ratio:16/10; overflow:hidden; user-select:none; }
   .slider-wrap img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:block; opacity:0; transition:opacity .2s ease; }
   .slider-wrap img.loaded{ opacity:1; }
-  .slider-wrap .over{ clip-path: inset(0 50% 0 0); }
+  .slider-wrap .over{ clip-path: inset(0 0 0 50%); }
+  #modal-img-in{ clip-path: inset(0 50% 0 0); }
   .slider-handle{ position:absolute; top:0; bottom:0; left:50%; width:3px; background:var(--orange); cursor:ew-resize; z-index:5; box-shadow:0 0 12px rgba(255,122,69,0.6); }
   .slider-handle::after{ content:'⇔'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:34px; height:34px; background:var(--orange); color:#0a0c12; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; }
   .modal-loading{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:4; pointer-events:none; }
@@ -602,8 +601,8 @@
       <button class="modal-side-nav prev" id="modal-side-prev" title="Previous (←)">‹</button>
       <button class="modal-side-nav next" id="modal-side-next" title="Next (→)">›</button>
       <div class="modal-loading" id="modal-loading"><div class="spin-sm"></div></div>
-      <img id="modal-img-in" src="" alt="input" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
-      <img id="modal-img-out" class="over" src="" alt="output" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
+      <img id="modal-img-in" alt="input" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
+      <img id="modal-img-out" class="over" alt="output" referrerpolicy="no-referrer" onerror="imgErr(this)" onload="imgOk(this)">
       <div class="slider-handle" id="slider-handle"></div>
     </div>
     <div class="modal-body-meta">
@@ -643,35 +642,49 @@ function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---- fast, transparency-safe image URLs -------------------------------------------------
-   Every image is routed through wsrv.nl, a free edge-cached resizing proxy that works with
-   ANY source host (Drive, S3, direct CDN links, etc). This is the main lever for load speed —
-   a 400px grid thumbnail is a fraction of the bytes of a multi-megapixel "hres" original, and
-   the proxy's edge cache makes repeat views near-instant.
-   Crucially it's requested as WebP, which (unlike Google Drive's own JPEG-only thumbnail
-   endpoint) supports an alpha channel — so a transparent "remove background" output PNG stays
-   transparent instead of getting flattened to a solid black/white square. ---- */
-function thumbUrl(url, size){
-  if(!url) return url;
-  try{
-    return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + size + '&output=webp&q=82&we=1';
-  }catch(e){ /* fall through to original url */ }
-  return url;
+/* ---- always-raw, queue-throttled image loading ------------------------------------------
+   Every image request goes straight to its real source URL — no resizing/re-encoding proxy —
+   so what's on screen is guaranteed to be the exact file from the sheet, never an approximation.
+   Speed instead comes from (a) only starting a request once a card is actually about to be
+   visible (see the IntersectionObserver below) and (b) a small concurrency cap so we never
+   fire 60 full-resolution requests at the browser simultaneously, which is what actually
+   stalls everything on a typical connection. Anything opened in the modal jumps the queue. ---- */
+const ImageQueue = (function(){
+  const MAX_CONCURRENT = 5;
+  let active = 0;
+  const queue = [];
+  function runNext(){
+    if(active >= MAX_CONCURRENT || queue.length===0) return;
+    active++;
+    const job = queue.shift();
+    job(()=>{ active--; runNext(); });
+  }
+  return {
+    enqueue(job, priority){
+      if(priority) queue.unshift(job); else queue.push(job);
+      runNext();
+    }
+  };
+})();
+function scheduleImageLoad(imgEl, url, priority){
+  if(!url) return;
+  ImageQueue.enqueue((done)=>{
+    let settled = false;
+    const finish = ()=>{ if(settled) return; settled = true; imgEl.removeEventListener('load', finish); imgEl.removeEventListener('error', finish); done(); };
+    imgEl.addEventListener('load', finish, {once:true});
+    imgEl.addEventListener('error', finish, {once:true});
+    imgEl.src = url;
+  }, !!priority);
 }
 
 /* ---- resilient image loading: retry once, then fall back to a clear message + raw link ---- */
 window.imgErr = function(img){
   const attempts = parseInt(img.dataset.retries||'0',10);
   if(attempts < 1 && img.dataset.rawUrl){
+    // one retry with a cache-bust, still against the exact same raw file
     img.dataset.retries = String(attempts+1);
-    const raw = img.dataset.fastUrl || img.dataset.rawUrl;
+    const raw = img.dataset.rawUrl;
     img.src = raw + (raw.includes('?') ? '&' : '?') + '__retry=' + Date.now();
-    return;
-  }
-  if(attempts < 2 && img.dataset.rawUrl){
-    // final fallback: try the true original (un-thumbnailed) URL before giving up
-    img.dataset.retries = String(attempts+1);
-    img.src = img.dataset.rawUrl;
     return;
   }
   const side = img.closest('.side');
@@ -1675,6 +1688,25 @@ function applyRecordFilters(){
   renderRecordGrid();
 }
 
+const gridImageObserver = ('IntersectionObserver' in window) ? new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(!entry.isIntersecting) return;
+    const img = entry.target;
+    gridImageObserver.unobserve(img);
+    scheduleImageLoad(img, img.dataset.src, false);
+  });
+}, {rootMargin:'600px 0px', threshold:0.01}) : null;
+
+function wireLazyGridImages(grid){
+  const imgs = grid.querySelectorAll('img[data-src]');
+  if(gridImageObserver){
+    imgs.forEach(img=> gridImageObserver.observe(img));
+  } else {
+    // no IntersectionObserver support: just load everything through the queue
+    imgs.forEach(img=> scheduleImageLoad(img, img.dataset.src, false));
+  }
+}
+
 function renderRecordGrid(){
   const grid = document.getElementById('record-grid');
   const empty = document.getElementById('empty-state');
@@ -1697,10 +1729,9 @@ function renderRecordGrid(){
     const {row, idx} = getRow(li);
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER], inUrl = row[F.IN], outUrl = row[F.OUT];
     const pillClass = action === 'qc_editingtool' ? 'pill-qc' : 'pill-reedit';
-    const inThumb = thumbUrl(inUrl, 380), outThumb = thumbUrl(outUrl, 380);
-    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(inThumb)}" data-retries="0" src="${escapeHtml(inThumb)}" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-src="${escapeHtml(inUrl)}" data-retries="0" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                           : `<div class="side missing" data-tag="Input">No input image</div>`;
-    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img loading="lazy" decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(outThumb)}" data-retries="0" src="${escapeHtml(outThumb)}" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-src="${escapeHtml(outUrl)}" data-retries="0" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                             : `<div class="side missing out" data-tag="AI Output">No output image</div>`;
     html += `<div class="rcard" data-idx="${idx}">
       <div class="compare">
@@ -1723,6 +1754,7 @@ function renderRecordGrid(){
   grid.querySelectorAll('.rcard').forEach(card=>{
     card.addEventListener('click', ()=> openModal(parseInt(card.dataset.idx)));
   });
+  wireLazyGridImages(grid);
 
   pagination.style.display = 'flex';
   document.getElementById('page-info').textContent = `Page ${currentPage.toLocaleString()} of ${totalPages.toLocaleString()}`;
@@ -1744,36 +1776,26 @@ function preloadRow(dataIdx){
   const row = DATA[dataIdx];
   [row[F.IN], row[F.OUT]].forEach(url=>{
     if(!url) return;
-    const im = new Image();
-    im.referrerPolicy = 'no-referrer';
-    im.src = thumbUrl(url, 700);
+    ImageQueue.enqueue((done)=>{
+      const im = new Image();
+      im.referrerPolicy = 'no-referrer';
+      im.onload = done; im.onerror = done;
+      im.src = url;
+    }, false); // low priority — never competes with what's currently open
   });
 }
 
-/* Show a small fast preview immediately (near-instant, from the resize proxy), then swap to
-   the exact, untouched raw file in the background once it's downloaded. Guarantees the
-   compare slider always settles on the real source image — never a lossy/approximate one —
-   while still feeling instant to open. */
-function loadModalImage(imgEl, rawUrl, previewUrl){
+/* Always loads the exact raw file — no resizing/re-encoding step — so the compare slider
+   is guaranteed to show precisely what's in the sheet. Loaded directly (not through the
+   shared grid queue) so it can never be stuck waiting behind grid thumbnails that are
+   already mid-download. */
+function loadModalImage(imgEl, rawUrl){
   imgEl.classList.remove('loaded');
   imgEl.dataset.rawUrl = rawUrl || '';
-  imgEl.dataset.fastUrl = previewUrl || '';
   imgEl.dataset.retries = '0';
-  imgEl.dataset.exact = '0';
   if(!rawUrl){ imgEl.style.display='none'; imgEl.removeAttribute('src'); return; }
   imgEl.style.display = '';
-  imgEl.src = previewUrl;
-
-  const upgrade = new Image();
-  upgrade.referrerPolicy = 'no-referrer';
-  upgrade.onload = ()=>{
-    // only apply if the modal hasn't moved on to a different record in the meantime
-    if(imgEl.dataset.rawUrl === rawUrl){
-      imgEl.dataset.exact = '1';
-      imgEl.src = rawUrl;
-    }
-  };
-  upgrade.src = rawUrl;
+  imgEl.src = rawUrl;
 }
 
 window.openModal = function(idx){
@@ -1801,8 +1823,8 @@ function renderModalAt(pos){
   modalIn.style.display=''; modalOut.style.display='';
 
   const inUrl = row[F.IN] || '', outUrl = row[F.OUT] || '';
-  loadModalImage(modalIn, inUrl, thumbUrl(inUrl, 700));
-  loadModalImage(modalOut, outUrl, thumbUrl(outUrl, 700));
+  loadModalImage(modalIn, inUrl);
+  loadModalImage(modalOut, outUrl);
   updateModalLoading();
 
   // Flag the case that actually confused users: no distinct output, or output === input.
@@ -1844,7 +1866,11 @@ function renderModalAt(pos){
 
 function setSlider(pct){
   pct = Math.max(0, Math.min(100, pct));
-  document.getElementById('modal-img-out').style.clipPath = `inset(0 ${100-pct}% 0 0)`;
+  // input shows its LEFT [0, pct] portion, output shows its RIGHT [pct, 100] portion —
+  // each image is confined to its own half so a slow/failed image never lets the other
+  // one silently cover the whole frame.
+  document.getElementById('modal-img-in').style.clipPath = `inset(0 ${100-pct}% 0 0)`;
+  document.getElementById('modal-img-out').style.clipPath = `inset(0 0 0 ${pct}%)`;
   document.getElementById('slider-handle').style.left = pct + '%';
 }
 
