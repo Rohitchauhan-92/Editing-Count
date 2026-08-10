@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Image Rework Intelligence · QC Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://wsrv.nl" crossorigin>
+<link rel="dns-prefetch" href="https://wsrv.nl">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
@@ -642,15 +644,27 @@ function escapeHtml(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---- always-raw, queue-throttled image loading ------------------------------------------
-   Every image request goes straight to its real source URL — no resizing/re-encoding proxy —
-   so what's on screen is guaranteed to be the exact file from the sheet, never an approximation.
-   Speed instead comes from (a) only starting a request once a card is actually about to be
-   visible (see the IntersectionObserver below) and (b) a small concurrency cap so we never
-   fire 60 full-resolution requests at the browser simultaneously, which is what actually
-   stalls everything on a typical connection. Anything opened in the modal jumps the queue. ---- */
+/* ---- fast grid thumbnails (modal always stays 100% raw — see loadModalImage) ------------
+   The record grid can have 60+ images on screen at once, and those are only ever used for
+   quick browsing/scanning, never for pixel-level QC — so it's safe (and the biggest lever for
+   speed) to fetch a small pre-resized version there instead of the full "hres" original.
+   Routed through wsrv.nl, a free edge-cached resizing proxy that works with any source host
+   and preserves alpha transparency (served as WebP), so removed-background PNGs still render
+   correctly. If the proxy ever fails for a given URL, imgErr() below falls straight back to
+   the untouched raw file, so a thumbnail issue never blocks the actual image from showing. */
+function gridThumbUrl(url, width){
+  if(!url) return url;
+  try{ return 'https://wsrv.nl/?url=' + encodeURIComponent(url) + '&w=' + width + '&output=webp&q=80&we=1'; }
+  catch(e){ return url; }
+}
+
+/* ---- queue-throttled grid loading -------------------------------------------------------
+   Speed comes from (a) only starting a request once a card is actually about to be visible
+   (see the IntersectionObserver below) and (b) a concurrency cap so we never fire dozens of
+   requests at the browser simultaneously, which is what actually stalls everything on a
+   typical connection. The modal bypasses this queue entirely — see loadModalImage. ---- */
 const ImageQueue = (function(){
-  const MAX_CONCURRENT = 5;
+  const MAX_CONCURRENT = 10;
   let active = 0;
   const queue = [];
   function runNext(){
@@ -677,11 +691,20 @@ function scheduleImageLoad(imgEl, url, priority){
   }, !!priority);
 }
 
-/* ---- resilient image loading: retry once, then fall back to a clear message + raw link ---- */
+/* ---- resilient image loading: retry the thumbnail once, then fall back to the exact raw
+   file (still through the fast path), and only show "unavailable" if that fails too ---- */
 window.imgErr = function(img){
   const attempts = parseInt(img.dataset.retries||'0',10);
-  if(attempts < 1 && img.dataset.rawUrl){
-    // one retry with a cache-bust, still against the exact same raw file
+  const hasFast = !!img.dataset.fastUrl;
+  if(attempts === 0 && hasFast){
+    // first failure: retry the thumbnail once with a cache-bust
+    img.dataset.retries = '1';
+    const fast = img.dataset.fastUrl;
+    img.src = fast + (fast.includes('?') ? '&' : '?') + '__retry=' + Date.now();
+    return;
+  }
+  if(attempts === (hasFast?1:0) && img.dataset.rawUrl){
+    // fall back to (or retry) the untouched raw file directly, cache-busted
     img.dataset.retries = String(attempts+1);
     const raw = img.dataset.rawUrl;
     img.src = raw + (raw.includes('?') ? '&' : '?') + '__retry=' + Date.now();
@@ -1729,9 +1752,9 @@ function renderRecordGrid(){
     const {row, idx} = getRow(li);
     const action = row[F.ACTION], comment = row[F.COMMENT], enterprise = row[F.ENTERPRISE], user = row[F.USER], inUrl = row[F.IN], outUrl = row[F.OUT];
     const pillClass = action === 'qc_editingtool' ? 'pill-qc' : 'pill-reedit';
-    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-src="${escapeHtml(inUrl)}" data-retries="0" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const inSide = inUrl ? `<div class="side in checker-bg" data-tag="Input"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(inUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(inUrl,380))}" data-src="${escapeHtml(gridThumbUrl(inUrl,380))}" data-retries="0" alt="input" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                           : `<div class="side missing" data-tag="Input">No input image</div>`;
-    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-src="${escapeHtml(outUrl)}" data-retries="0" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
+    const outSide = outUrl ? `<div class="side out checker-bg" data-tag="AI Output"><img decoding="async" referrerpolicy="no-referrer" data-raw-url="${escapeHtml(outUrl)}" data-fast-url="${escapeHtml(gridThumbUrl(outUrl,380))}" data-src="${escapeHtml(gridThumbUrl(outUrl,380))}" data-retries="0" alt="output" onerror="imgErr(this)" onload="this.classList.add('loaded')"></div>`
                             : `<div class="side missing out" data-tag="AI Output">No output image</div>`;
     html += `<div class="rcard" data-idx="${idx}">
       <div class="compare">
